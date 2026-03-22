@@ -10,11 +10,6 @@ primary_region = "${PRIMARY_REGION}"
 [env]
   DB_PATH = "/etc/linkding/data/db.sqlite3"
   LD_SERVER_PORT = "8080"
-  LITESTREAM_REPLICA_PATH = "linkding_replica.sqlite3"
-  # Backblaze B2 bucket name
-  LITESTREAM_REPLICA_BUCKET = "${LITESTREAM_REPLICA_BUCKET}"
-  # Backblaze B2 bucket endpoint
-  LITESTREAM_REPLICA_ENDPOINT = "${LITESTREAM_REPLICA_ENDPOINT}"
 
 [http_service]
   internal_port = 8080

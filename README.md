@@ -1,38 +1,25 @@
 # linkding on fly
 
-> 🔖 Run the self-hosted bookmark service [linkding](https://github.com/sissbruecker/linkding) on [fly.io](https://fly.io/). Automatically backup the bookmark database to [Backblaze B2](https://www.backblaze.com/b2/cloud-storage.html) with [litestream](https://litestream.io/).
+> 🔖 Run the self-hosted bookmark service [linkding](https://github.com/sissbruecker/linkding) on [fly.io](https://fly.io/) with a persistent Fly volume for SQLite storage.
 
 ### Pricing
 
-Assuming one 256MB VM and a 3GB volume, this setup fits within Fly's free tier. [^0] Backups with Backblaze B2 are free as well. [^1]
+Assuming one 256MB VM and a 3GB volume, this setup fits within Fly's free tier. [^0]
 
 [^0]: Otherwise the VM is ~$2 per month. $0.15/GB per month for the persistent volume.
-[^1]: The first 10GB are free, then $0.005 per GB.
 
 ### Prerequisites
 
 - A [fly.io](https://fly.io/) account
-- A [Backblaze](https://www.backblaze.com/) account
-- `flyctl` CLI installed. [^2]
+- `flyctl` CLI installed. [^1]
 
-[^2]: https://fly.io/docs/getting-started/installing-flyctl/
+[^1]: https://fly.io/docs/getting-started/installing-flyctl/
 
 Instructions below assume that you have cloned this repository to your local computer:
 
 ```sh
 git clone https://github.com/fspoettel/linkding-on-fly.git && cd linkding-on-fly
 ```
-
-#### Litestream - Create Backblaze B2 Bucket and Application Key
-
-Log into [Backblaze B2](https://secure.backblaze.com/user_signin.htm) and [create a bucket](https://litestream.io/guides/backblaze/#create-a-bucket). Once created, you will see the bucket's name and endpoint. You will use these later to populate `LITESTREAM_REPLICA_BUCKET` and `LITESTREAM_REPLICA_ENDPOINT` in the `fly.toml` configuration.
-
-Next, create [an application key](https://litestream.io/guides/backblaze/#create-a-user) for the bucket. Once created, you will see the `keyID` and `applicationKey`. You will add these later to Fly's secret store, save them for step 3 below.
-
-
-
-> **Note**  
-> If you want to use another storage provider, check litestream's ["Replica Guides"](https://litestream.io/guides/#replica-guides) section and adjust the config as needed.
 
 ### Usage
 
@@ -78,7 +65,7 @@ Next, create [an application key](https://litestream.io/guides/backblaze/#create
     flyctl launch
     ```
 
-    Next, open the `fly.toml` and add the following `env` and `mounts` sections (populating `LITESTREAM_REPLICA_ENDPOINT` and `LITESTREAM_REPLICA_BUCKET`):
+    Next, open the `fly.toml` and add the following `env` and `mounts` sections:
 
     ```toml
     [env]
@@ -86,25 +73,13 @@ Next, create [an application key](https://litestream.io/guides/backblaze/#create
       LD_SERVER_PORT="8080"
       # Path to linkding's sqlite database.
       DB_PATH="/etc/linkding/data/db.sqlite3"
-      # B2 replica path.
-      LITESTREAM_REPLICA_PATH="linkding_replica.sqlite3"
-      # B2 endpoint.
-      LITESTREAM_REPLICA_ENDPOINT="<Backblaze B2 endpoint>"
-      # B2 bucket name.
-      LITESTREAM_REPLICA_BUCKET="<Backblaze B2 bucket name>"
 
     [mounts]
       source="linkding_data"
       destination="/etc/linkding/data"
     ```
 
-3. Add the Backblaze application key to fly's secret store
-
-    ```sh
-    flyctl secrets set LITESTREAM_ACCESS_KEY_ID="<keyId>" LITESTREAM_SECRET_ACCESS_KEY="<applicationKey>"
-    ```
-
-4. Create a [persistent volume](https://fly.io/docs/reference/volumes/) to store the `linkding` application data:
+3. Create a [persistent volume](https://fly.io/docs/reference/volumes/) to store the `linkding` application data:
 
     ```sh
     # List available regions via: flyctl platform regions
@@ -112,49 +87,36 @@ Next, create [an application key](https://litestream.io/guides/backblaze/#create
     ```
 
     > **Note**  
-    > Fly's free tier includes `3GB` of storage across your VMs. Since `linkding` is very light on storage, a `1GB` volume will be more than enough for most use cases. It's possible to change volume size later. A how-to can be found in the _"Verify Backups / Scale Persistent Volume"_ section below.
+    > Fly's free tier includes `3GB` of storage across your VMs. Since `linkding` is very light on storage, a `1GB` volume will be more than enough for most use cases. It's possible to change volume size later. A how-to can be found in the _"Scale Persistent Volume"_ section below.
 
-5. Add the `linkding` superuser credentials to fly's secret store:
+4. Add the `linkding` superuser credentials to fly's secret store:
 
     ```sh
     flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="<password>"
     ```
 
-6. Deploy `linkding` to fly:
+5. Deploy `linkding` to fly:
 
     ```sh
     flyctl deploy
     ```
 
     > **Note**  
-    > The [Dockerfile](Dockerfile) contains overridable build arguments: `ALPINE_IMAGE_TAG`, `LINKDING_IMAGE_TAG` and `LITESTREAM_VERSION` which can overridden by passing them to `flyctl deploy` like `--build-arg LITESTREAM_VERSION=v0.3.11` etc.
+    > The [Dockerfile](Dockerfile) contains an overridable build argument: `LINKDING_IMAGE_TAG`. Pass it to `flyctl deploy` with `--build-arg LINKDING_IMAGE_TAG=<tag>` as needed.
 
     
-That's it! 🚀 - If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 5.
+That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 4.
 
 If you wish, you can [configure a custom domain for your install](https://fly.io/docs/app-guides/custom-domains-with-fly/).
 
 ### Verify the Installation
 
 - You should be able to log into your linkding instance.
-- There should be an initial replica of your database in your B2 bucket.
 - Your user data should survive a restart of the VM.
 
-### Verify Backups / Scale Persistent Volume
+### Scale Persistent Volume
 
-Litestream continuously backs up your database by persisting its [WAL](https://en.wikipedia.org/wiki/Write-ahead_logging) to the Backblaze B2 bucket, once per second.
-
-There are two ways to verify these backups:
-
-1. Run the docker image locally or on a second VM. Verify the DB restores correctly.
-2. Swap the fly volume for a new one and verify the DB restores correctly.
-
-We will focus on _2_ as it simulates an actual data loss scenario. This procedure can also be used to scale your volume to a different size.
-
-Start by making a manual backup of your data:
-
-1. SSH into the VM and copy the DB to a remote. If only you are using your instance, you can also export bookmarks as HTML.
-2. Make a snapshot of the B2 bucket in the B2 admin panel.
+Fly volumes persist across VM restarts, but they are not a substitute for your own backup strategy. Before deleting or replacing a volume, make a manual backup of your data by copying the SQLite database from the VM or exporting bookmarks as HTML.
 
 Now list all fly volumes and note the id of the `linkding_data` volume. Then, delete the volume:
 
@@ -163,21 +125,9 @@ flyctl volumes list
 flyctl volumes delete <id>
 ```
 
-This will result in a **dead** VM after a few seconds. Create a new `linkding_data` volume. Your application should automatically attempt to restart. If not, restart it manually.
-
-When the application starts, you should see the successful restore in the logs:
-
-```
-[info] No database found, attempt to restore from a replica.
-[info] Finished restoring the database.
-[info] Starting litestream & linkding service.
-```
+This will result in a **dead** VM after a few seconds. Create a new `linkding_data` volume, then redeploy or restart the app so it can mount the replacement volume.
 
 ### Troubleshooting
-
-#### Litestream is logging 403 errors
-
-Check that your B2 secrets and environment variables are correct.
 
 #### Fly ssh does not connect
 
