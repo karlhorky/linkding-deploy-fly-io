@@ -18,94 +18,55 @@ Assuming one 256MB VM and a 3GB volume, this setup fits within Fly's free tier. 
 Instructions below assume that you have cloned this repository to your local computer:
 
 ```sh
-git clone https://github.com/fspoettel/linkding-on-fly.git && cd linkding-on-fly
+git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkding-on-fly
 ```
 
 ### Usage
 
 1. Login to [`flyctl`](https://fly.io/docs/getting-started/log-in-to-fly/):
 
-    ```sh
-    flyctl auth login
-    ```
+   ```sh
+   flyctl auth login
+   ```
 
 2. Generate fly app and create the [`fly.toml`](https://fly.io/docs/reference/configuration/):
-    <details>
-    <summary>Alternative: Generating from template</summary>
+   ```sh
+   # Generate the initial fly.toml
+   # When asked, don't setup Postgres or Redis.
+   flyctl launch
+   ```
 
-    You can generate the `fly.toml` from the [template](templates/fly.toml) provided in this repository.
+   Next, open the `fly.toml` and add the following `env` and `mounts` sections:
 
-    1. Install [`envsubst`](https://www.gnu.org/software/gettext/manual/html_node/envsubst-Invocation.html) if you don't have it already:
+   ```toml
+   [env]
+     # linkding's internal port, should be 8080 on fly.
+     LD_SERVER_PORT="8080"
+     # Path to linkding's sqlite database.
+     DB_PATH="/etc/linkding/data/db.sqlite3"
 
-        ```sh
-        # macOS
-        brew install gettext
-        ```
+   [mounts]
+     source="linkding_data"
+     initial_size="1GB"
+     destination="/etc/linkding/data"
+   ```
 
-    2. Copy the [.env.sample](.env.sample) file to `.env`, fill in the values and source them:
+3. Add the `linkding` superuser credentials to fly's secret store:
 
-        ```sh
-        cp .env.sample .env
-        # vim .env
-        source .env
-        ```
+   ```sh
+   flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="<password>"
+   ```
 
-    3. Generate the `fly.toml` from the template:
+4. Deploy `linkding` to fly:
 
-        ```sh
-        envsubst < templates/fly.toml > fly.toml
-        ```
+   ```sh
+   flyctl deploy
+   ```
 
-    4. Proceed to step 3.
-    </details>
+   > **Note**  
+   > The [Dockerfile](Dockerfile) contains an overridable build argument: `LINKDING_IMAGE_TAG`. Pass it to `flyctl deploy` with `--build-arg LINKDING_IMAGE_TAG=<tag>` as needed.
 
-    ```sh
-    # Generate the initial fly.toml
-    # When asked, don't setup Postgres or Redis.
-    flyctl launch
-    ```
-
-    Next, open the `fly.toml` and add the following `env` and `mounts` sections:
-
-    ```toml
-    [env]
-      # linkding's internal port, should be 8080 on fly.
-      LD_SERVER_PORT="8080"
-      # Path to linkding's sqlite database.
-      DB_PATH="/etc/linkding/data/db.sqlite3"
-
-    [mounts]
-      source="linkding_data"
-      destination="/etc/linkding/data"
-    ```
-
-3. Create a [persistent volume](https://fly.io/docs/reference/volumes/) to store the `linkding` application data:
-
-    ```sh
-    # List available regions via: flyctl platform regions
-    flyctl volumes create linkding_data --region <region code> --size 1
-    ```
-
-    > **Note**  
-    > Fly's free tier includes `3GB` of storage across your VMs. Since `linkding` is very light on storage, a `1GB` volume will be more than enough for most use cases. It's possible to change volume size later. A how-to can be found in the _"Scale Persistent Volume"_ section below.
-
-4. Add the `linkding` superuser credentials to fly's secret store:
-
-    ```sh
-    flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="<password>"
-    ```
-
-5. Deploy `linkding` to fly:
-
-    ```sh
-    flyctl deploy
-    ```
-
-    > **Note**  
-    > The [Dockerfile](Dockerfile) contains an overridable build argument: `LINKDING_IMAGE_TAG`. Pass it to `flyctl deploy` with `--build-arg LINKDING_IMAGE_TAG=<tag>` as needed.
-
-    
-That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 4.
+That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 3.
 
 If you wish, you can [configure a custom domain for your install](https://fly.io/docs/app-guides/custom-domains-with-fly/).
 
