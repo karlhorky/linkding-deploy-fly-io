@@ -34,7 +34,7 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
    ```sh
    # Generate the initial fly.toml
    # When asked, don't setup Postgres or Redis.
-   flyctl launch
+   flyctl launch --no-deploy
    ```
 
    Next, open the `fly.toml` and add the following `env` and `mounts` sections:
@@ -51,11 +51,11 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
      destination="/etc/linkding/data"
    ```
 
-3. Create a [persistent volume](https://fly.io/docs/reference/volumes/) to store the `linkding` application data:
+3. Create a [persistent volume](https://fly.io/docs/reference/volumes/) in the same region as your app to store the `linkding` application data:
 
    ```sh
    # List available regions via: flyctl platform regions
-   flyctl volumes create linkding_data --region <region code> --size 1
+   flyctl volumes create linkding_data --region <region code> --size 1 --count 1
    ```
 
    > **Note**  
@@ -76,6 +76,9 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
 
    > **Note**  
    > The [Dockerfile](Dockerfile) contains an overridable build argument: `LINKDING_IMAGE_TAG`. Pass it to `flyctl deploy` with `--build-arg LINKDING_IMAGE_TAG=<tag>` as needed.
+
+   > **Note**  
+   > This setup is intended to run as a single Machine with a single SQLite-backed volume. Do not scale it to multiple Machines unless you also change the storage architecture.
 
 That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 4.
 
