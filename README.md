@@ -18,7 +18,7 @@ Assuming one 256MB VM and a 3GB volume, this setup fits within Fly's free tier. 
 Instructions below assume that you have cloned this repository to your local computer:
 
 ```sh
-git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkding-on-fly
+git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkding-on-fly-no-backblaze
 ```
 
 ### Usage
@@ -30,6 +30,7 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
    ```
 
 2. Generate fly app and create the [`fly.toml`](https://fly.io/docs/reference/configuration/):
+
    ```sh
    # Generate the initial fly.toml
    # When asked, don't setup Postgres or Redis.
