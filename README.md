@@ -55,7 +55,8 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
 3. Add the `linkding` superuser credentials to fly's secret store:
 
    ```sh
-   flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="<password>"
+   read -s LD_SUPERUSER_PASSWORD
+   flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="$LD_SUPERUSER_PASSWORD"
    ```
 
 4. Deploy `linkding` to fly:
