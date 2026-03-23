@@ -15,21 +15,22 @@ Assuming one 512MB VM and a 1GB volume, this setup should fit within a $5/month 
 
 [^1]: https://fly.io/docs/getting-started/installing-flyctl/
 
-Instructions below assume that you have cloned this repository to your local computer:
-
-```sh
-git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkding-on-fly-no-backblaze
-```
-
 ### Usage
 
-1. Login to [`flyctl`](https://fly.io/docs/getting-started/log-in-to-fly/):
+1. Clone this repository to your local computer:
+
+   ```sh
+   git clone https://github.com/karlhorky/linkding-deploy-fly-io.git
+   cd linkding-deploy-fly-io
+   ```
+
+2. Login to [`flyctl`](https://fly.io/docs/getting-started/log-in-to-fly/):
 
    ```sh
    flyctl auth login
    ```
 
-2. Generate the initial [`fly.toml`](https://fly.io/docs/reference/configuration/) without deploying:
+3. Generate the initial [`fly.toml`](https://fly.io/docs/reference/configuration/) without deploying:
 
    ```sh
    # Generate the initial fly.toml
@@ -38,7 +39,7 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
    flyctl launch --no-deploy
    ```
 
-3. Add the following `env` and `mounts` sections to `fly.toml`:
+4. Add the following `env` and `mounts` sections to `fly.toml`:
 
    ```toml
    [env]
@@ -52,7 +53,7 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
      destination="/etc/linkding/data"
    ```
 
-4. Create a [persistent volume](https://fly.io/docs/reference/volumes/) in the same region as your app to store the `linkding` application data:
+5. Create a [persistent volume](https://fly.io/docs/reference/volumes/) in the same region as your app to store the `linkding` application data:
 
    ```sh
    # List available regions via: flyctl platform regions
@@ -62,14 +63,14 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
    > **Note**  
    > Fly's free tier includes `3GB` of storage across your VMs. Since `linkding` is very light on storage, a `1GB` volume will be more than enough for most use cases. It's possible to change volume size later. A how-to can be found in the _"Scale Persistent Volume"_ section below.
 
-5. Add the `linkding` superuser credentials to fly's secret store:
+6. Add the `linkding` superuser credentials to fly's secret store:
 
    ```sh
    read -s LD_SUPERUSER_PASSWORD
    flyctl secrets set LD_SUPERUSER_NAME="<username>" LD_SUPERUSER_PASSWORD="$LD_SUPERUSER_PASSWORD"
    ```
 
-6. Deploy `linkding` to fly:
+7. Deploy `linkding` to fly:
 
    ```sh
    flyctl deploy
@@ -78,7 +79,7 @@ git clone https://github.com/karlhorky/linkding-on-fly-no-backblaze && cd linkdi
    > **Note**  
    > This setup is intended to run as a single Machine with a single SQLite-backed volume. Do not scale it to multiple Machines unless you also change the storage architecture.
 
-That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 5.
+That's it! If all goes well, you can now access `linkding` by running `flyctl open`. You should see the `linkding` login page and be able to log in with the superuser credentials you set in step 6.
 
 If you wish, you can [configure a custom domain for your install](https://fly.io/docs/app-guides/custom-domains-with-fly/).
 
