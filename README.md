@@ -1,4 +1,4 @@
-# linkding on fly
+# Deploy linkding to Fly.io
 
 > 🔖 Run the self-hosted bookmark service [linkding](https://github.com/sissbruecker/linkding) on [fly.io](https://fly.io/) with a persistent Fly volume for SQLite storage.
 
@@ -129,3 +129,9 @@ cd /etc/linkding
 python manage.py createsuperuser --username=<your_username> --email=<your_email>
 exit
 ```
+
+### Credits
+
+- Mostly taken from [`fspoettel/linkding-on-fly`](https://github.com/fspoettel/linkding-on-fly) by [Felix Spöttel](https://github.com/fspoettel)
+- 256MB RAM Fly.io machine memory issue fixes by [Karl Horky](https://github.com/karlhorky)
+- Simplification and removal of Backblaze backup by [Karl Horky](https://github.com/karlhorky)
