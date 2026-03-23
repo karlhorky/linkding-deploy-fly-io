@@ -1,1 +1,1 @@
-FROM docker.io/sissbruecker/linkding:1.45.0
+FROM sissbruecker/linkding:1.45.0
